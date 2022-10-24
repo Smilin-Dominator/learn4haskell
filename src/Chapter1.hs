@@ -491,7 +491,7 @@ Implement a function that returns the last digit of a given number.
 -}
 -- DON'T FORGET TO SPECIFY THE TYPE IN HERE
 lastDigit :: Int -> Int
-lastDigit n = mod n 10 
+lastDigit n = mod (abs n) 10 
 
 {- |
 =⚔️= Task 6
@@ -554,10 +554,9 @@ Casual reminder about adding top-level type signatures for all functions :)
 -}
 mid :: Int -> Int -> Int -> Int
 mid x y z
-	| (x > y && x < z) || (x < y && x > z) = x
-	| (y > x && y < z) || (y < x && y > z) = y
-	| (z > y && z < x) || (z < y && z > x) = z
-
+	| (x >= y && x <= z) || (x <= y && x >= z) = x
+	| (y >= x && y <= z) || (y <= x && y >= z) = y
+	| (z >= y && z <= x) || (z <= y && z >= x) = z
 
 {- |
 =⚔️= Task 8
@@ -638,13 +637,11 @@ Try to introduce variables in this task (either with let-in or where) to avoid
 specifying complex expressions.
 -}
 sumLast2 :: Int -> Int
-sumLast2 n = secondLast n + last n
+sumLast2 n = secondLastDigit n + lastDigit n -- lastDigit was defined above
 	where
-		last :: Int -> Int
-		last n = mod n 10
-
-		secondLast :: Int -> Int
-		secondLast n = last (div n 10)
+		secondLastDigit :: Int -> Int
+		secondLastDigit num = lastDigit (div absNum 10)
+			where absNum = abs num
 
 {- |
 =💣= Task 10*
@@ -665,9 +662,10 @@ aren't ready for this boss yet!
 -}
 firstDigit :: Int -> Int
 firstDigit n
-	| n < 10 = n
-	| n == 10 = 1 -- Skipping an extra step
-	| n > 10 = firstDigit (div n 10)
+	| num < 10 = num
+	| num > 10 = firstDigit (div num 10)
+	| otherwise = 1 -- Is 10
+	where num = abs n
 
 {-
 You did it! Now it is time to open a pull request with your changes
