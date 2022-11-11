@@ -892,12 +892,14 @@ list.
 -}
 rotate :: Int -> [Int] -> [Int]
 rotate n list
-	| n < 0 = []
-	| n == 0 = list
-	| otherwise = droppedArray ++ firstElements
+	| n < 0 								= []
+	| n == 0 || n == len		= list
+	| otherwise 						= droppedArray ++ firstElements
 	where
-		firstElements = take n list
-		droppedArray = drop n list
+		len = length list
+		index = if n < len then n else abs (len - n)
+		firstElements = take index list
+		droppedArray = drop index list
 
 {- |
 =💣= Task 12*
