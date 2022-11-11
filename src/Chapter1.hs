@@ -571,7 +571,7 @@ True
 False
 -}
 isVowel :: Char -> Bool
-isVowel c = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' = True
+isVowel c = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u'
 
 {- |
 == Local variables and functions
@@ -660,8 +660,7 @@ aren't ready for this boss yet!
 firstDigit :: Int -> Int
 firstDigit n
 	| num < 10 = num
-	| num > 10 = firstDigit (div num 10)
-	| otherwise = 1 -- Is 10
+	| otherwise = firstDigit (div num 10)
 	where num = abs n
 
 {-
