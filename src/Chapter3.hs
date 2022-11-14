@@ -50,6 +50,7 @@ signatures in places where you can't by default. We believe it's helpful to
 provide more top-level type signatures, especially when learning Haskell.
 -}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Chapter3 where
 import Data.List
@@ -390,6 +391,7 @@ data Knight = Knight
 		knightHealth :: Int
 		, knightAttack :: Int
 		, knightGold :: Int
+		, nextAction :: FighterAction
 	} deriving (Show)
 
 data Monster = Monster
@@ -1156,6 +1158,122 @@ properties using typeclasses, but they are different data types in the end.
 Implement data types and typeclasses, describing such a battle between two
 contestants, and write a function that decides the outcome of a fight!
 -}
+
+-- Fighter Actions
+
+data Fighter = Either Knight Monster
+
+data FighterAction
+	= Attack
+	| Potion
+	| Spell
+	deriving (Enum, Eq, Ord, Show)
+
+nextFighterAction :: FighterAction -> FighterAction
+nextFighterAction action = case action of
+	Attack -> Potion
+	Potion -> Spell
+	Spell -> Attack
+
+-- Fight
+
+class Fight f1 f2 where
+	doFight :: f1 -> f2 -> Either f1 f2 -- Recurses until either fighter's health is <= 0 and returns the winner
+	fighter1 :: f1 -> f2 -> (f1, f2) -- Does the actions of Player 1
+	fighter2 :: f1 -> f2 -> (f1, f2) -- Does the actions of Player 2
+
+-- Knight + Knight
+instance Fight Knight Knight where
+	doFight knightA knightB = 
+		let (knightA1, knightB1) = fighter1 knightA knightB in
+			if knightHealth knightB1 <= 0 then
+				Right knightA1
+			else
+				let (knightA2, knightB2) = fighter2 knightA1 knightB1 in
+					if knightHealth knightA2 <= 0 then
+						Right knightB2
+					else
+						doFight knightA2 knightB2
+	fighter1 knightA knightB =
+		let action = nextAction knightA	in
+			case action of 
+				Attack -> (
+					knightA { nextAction = nextFighterAction action }
+					, knightB { knightHealth = knightHealth knightB - knightAttack knightA }
+					)
+				Potion -> (
+					knightA { knightHealth = knightHealth knightA + 10, nextAction = nextFighterAction action }
+					, knightB   
+					)
+				Spell -> (
+					knightA { knightHealth = knightHealth knightA + 10, nextAction = nextFighterAction action }
+					, knightB
+					)
+	fighter2 knightA knightB = 
+		let action = nextAction knightB in
+			case action of 
+				Attack -> (
+						knightA { knightHealth = knightHealth knightA - knightAttack knightB }
+						, knightB { nextAction = nextFighterAction action }
+					)
+				Potion -> (
+						knightA
+						, knightB { knightHealth = knightHealth knightB + 10, nextAction = nextFighterAction action }
+					)
+				Spell -> (
+						knightA
+						, knightB { knightHealth = knightHealth knightB + 10, nextAction = nextFighterAction action }
+					)
+
+-- Monster + Monster
+instance Fight Monster Monster where
+	doFight monsterA monsterB =
+		let (monsterA1, monsterB1) = fighter1 monsterA monsterB in
+			if monsterHealth monsterB1 <= 0 then
+				return monsterA1
+			else
+				let (monsterA2, monsterB2) = fighter2 monsterA1 monsterB1 in
+					if monsterHealth monsterA2 <= 0 then
+						return monsterB2
+					else
+						doFight monsterA2 monsterB2 -- Recurse
+	fighter1 monsterA monsterB =
+		let injuredMonsterB = monsterB { monsterHealth = monsterHealth monsterB - monsterAttack monsterA } in
+			(monsterA, injuredMonsterB)
+	fighter2 monsterA monsterB =
+		let injuredMonsterA = monsterA { monsterHealth = monsterHealth monsterA - monsterAttack monsterB } in
+			(injuredMonsterA, monsterB)
+
+-- Knight + Monster
+instance Fight Knight Monster where
+	doFight knight monster =
+		let (knight1, monster1) = fighter1 knight monster in
+			if monsterHealth monster1 <= 0 then
+				Left knight1
+			else
+				let (knight2, monster2) = fighter2 knight1 monster1 in
+					if knightHealth knight2 <= 0 then
+						Right monster2
+					else
+						doFight knight2 monster2 -- Recurse
+	fighter1 knight monster =
+		let action = nextAction knight in
+			case action of 
+				Attack -> (
+					knight { nextAction = nextFighterAction action }
+					, monster { monsterHealth = monsterHealth monster - knightAttack knight }
+					)
+				Potion -> (
+					knight { knightHealth = knightHealth knight + 10, nextAction = nextFighterAction action }
+					, monster
+					)
+				Spell -> (
+					knight { knightHealth = knightHealth knight + 10, nextAction = nextFighterAction action }
+					, monster
+					)
+	fighter2 knight monster =
+		let injuredKnight = knight { knightHealth = knightHealth knight - monsterAttack monster } in
+			(injuredKnight, monster)
 
 {-
 You did it! Now it is time to open pull request with your changes
