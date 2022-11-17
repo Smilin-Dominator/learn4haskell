@@ -258,6 +258,7 @@ name.
 
 > QUESTION: Can you understand why the following implementation of the
   Functor instance for Maybe doesn't compile?
+> ANSWER: Because 'a' may be Nothing, and we're returning Nothing in the last pattern
 
 @
 instance Functor Maybe where
@@ -281,7 +282,6 @@ data Secret e a
     | Reward a
     deriving (Show, Eq)
 
-
 {- |
 Functor works with types that have kind `* -> *` but our 'Secret' has
 kind `* -> * -> *`. What should we do? Don't worry. We can partially
@@ -292,7 +292,8 @@ values and apply them to the type level?
 -}
 instance Functor (Secret e) where
     fmap :: (a -> b) -> Secret e a -> Secret e b
-    fmap = error "fmap for Box: not implemented!"
+    fmap _ (Trap trap) = Trap trap
+    fmap f (Reward reward) = Reward (f reward)
 
 {- |
 =⚔️= Task 3
@@ -305,6 +306,11 @@ typeclasses for standard data types.
 data List a
     = Empty
     | Cons a (List a)
+
+instance Functor List where
+  fmap :: (a -> b) -> List a -> List b
+  fmap _ Empty = Empty
+  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
 
 {- |
 =🛡= Applicative
